@@ -5,14 +5,12 @@ import pandas as pd
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-# Project paths
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(ROOT_DIR, 'src'))
 from model_inference import ModelInference
 
 app = FastAPI(title="Churn Prediction API", version="1.0.0")
 
-# Inference System එක load කිරීම
 inference_system = ModelInference(model_path='artifacts/models/churn_analysis.joblib')
 
 class CustomerData(BaseModel):
@@ -38,21 +36,15 @@ def home():
 @app.post("/predict")
 async def predict(data: CustomerData):
     try:
-        # 1. දත්ත dictionary එකක් ලෙස ලබා ගැනීම
         input_data = data.model_dump()
         
-        # 2. MANUAL ONE-HOT ENCODING (Model එක බලාපොරොත්තු වන columns සෑදීම)
-        # Gender Encoding
         input_data['Gender_Female'] = 1 if input_data['Gender'] == 'Female' else 0
         input_data['Gender_Male'] = 1 if input_data['Gender'] == 'Male' else 0
 
-        # Geography Encoding
         input_data['Geography_France'] = 1 if input_data['Geography'] == 'France' else 0
         input_data['Geography_Germany'] = 1 if input_data['Geography'] == 'Germany' else 0
         input_data['Geography_Spain'] = 1 if input_data['Geography'] == 'Spain' else 0
 
-        # 3. Prediction එක ලබා ගැනීම
-        # මෙහිදී 'inference_system.predict' තුළ අභ්‍යන්තරව Scaling සහ Binning සිදු වේ
         result = inference_system.predict(input_data)
 
         return {
@@ -64,7 +56,6 @@ async def predict(data: CustomerData):
         }
 
     except Exception as e:
-        # Error එක log එකේ බලාගන්න පහත පේළිය පාවිච්චි කරන්න
         print(f"PREDICTION ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
